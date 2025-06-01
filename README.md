@@ -1,5 +1,5 @@
 # asteroids
-echo "Asteroids
+echo "Asteroids"
 
 Key Features
 - Player spaceship with physics-based movement
