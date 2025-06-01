@@ -21,9 +21,7 @@ Requirements
 - Pygame 2.0+
 
 Installation:
-1. Clone Repo :
-   git clone https://github.com/nadirhammadi/asteroids.git
-   cd asteroids
+1. Clone Repo
 
 2. Create and activate a vertual environement (recommanded) :
    # Linux/Mac:
