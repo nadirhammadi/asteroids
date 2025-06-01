@@ -1,6 +1,6 @@
 # asteroids
 
-Key Features
+#Key Features
 - Player spaceship with physics-based movement
 - Asteroid destruction with fragmentation
 - Particle effects for explosions and engine trails
@@ -8,7 +8,7 @@ Key Features
 - Score system and lives
 - SProgressive difficulty levels
 
-Game Controls:
+#Game Controls:
 - LEFT/RIGHT ARROWS: Rotate
 - UP ARROW: Accelerate
 - SPACEBAR: Fire
@@ -16,36 +16,36 @@ Game Controls:
 - ESC: Quit
 - R: Restart after game over
 
-Requirements
+#Requirements
 - Python 3.8+
 - Pygame 2.0+
 
-Installation:
+#Installation:
 1. Clone Repo
 
 2. Create and activate a vertual environement (recommanded) :
-   # Linux/Mac:
+    Linux/Mac:
    python -m venv venv
    source venv/bin/activate
    
-   # Windows:
+    Windows:
    python -m venv venv
    venv\Scripts\activate
 
 3. Install dependencies:
    pip install -r requirements.txt
 
-How to Run:
+#How to Run:
    python Main.py
 
-Customization
+#Customization
 Modify constants.py to change:
 - Screen dimensions (SCREEN_WIDTH, SCREEN_HEIGHT)
 - Game difficulty (FPS, INVULNERABILITY_DURATION)
 - Color schemes (PLAYER_COLOR, ASTEROID_COLORS)
 - Physics parameters (ACCELERATION, MAX_SPEED)
 
-Project structure:
+#Project structure:
 ├── asteroid.py         # Asteroid class implementation
 ├── asteriodfield.py    # Asteroid field management
 ├── utils.py            # Utility classes (Explosion, StarBackground)
