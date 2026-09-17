@@ -1,35 +1,39 @@
+import math
+import random
 import pygame
+from pygame.locals import K_LEFT, K_RIGHT, K_UP, K_SPACE
+from typing import List, Optional, Tuple
 from constants import *
-from utils import * 
+from utils import wrap_position, Particle
 from shot import Shot
-from typing import List, Tuple
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos: Tuple[int,int]):
+    def __init__(self, pos: Tuple[int, int]):
         super().__init__()
         self.radius = PLAYER_RADIUS
 
-        # Reference to the base image (used for rotation) 
-        self._base_image = pygame.Surface((self.radius*2, self.radius*2), pygame.SRCALPHA).convert_alpha()
+        # Image de base (utilisée pour la rotation)
+        self._base_image = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA).convert_alpha()
         pygame.draw.circle(self._base_image, PLAYER_COLOR, (self.radius, self.radius), self.radius)
         pygame.draw.circle(self._base_image, PLAYER_BORDER, (self.radius, self.radius), self.radius, 2)
-        # We draw the nose of the ship
+        # Nez du vaisseau
         nose = [
-            (self.radius, 0),  # Up
-            (self.radius - int(self.radius*0.7), int(self.radius*0.7)),
-            (self.radius + int(self.radius*0.7), int(self.radius*0.7)),
+            (self.radius, 0),  # haut
+            (self.radius - int(self.radius * 0.7), int(self.radius * 0.7)),
+            (self.radius + int(self.radius * 0.7), int(self.radius * 0.7)),
         ]
         pygame.draw.polygon(self._base_image, PLAYER_BORDER, nose)
 
-        # Initial angle and image
-        self.angle = 0  # initial angle in degrees
+        # Cache des images pré-tournées, indexé par angle (multiples de PLAYER_ROT_SPEED)
+        self._rotated_cache = {}
+        self._invuln_overlay: Optional[pygame.Surface] = None
 
-        # current image and rect
+        self.angle = 0  # angle initial en degrés
         self.image = self._base_image.copy()
         self.rect = self.image.get_rect(center=pos)
 
-        # Physics
+        # Physique
         self.pos = pygame.Vector2(pos)
         self.vel = pygame.Vector2(0, 0)
 
@@ -38,31 +42,38 @@ class Player(pygame.sprite.Sprite):
         self.invulnerable = False
         self.invul_timer = 0.0
 
-        # Player stats
+        # Stats du joueur
         self.lives = 3
         self.score = 0
 
-        # Listes for particles and trail
+        # Particules et traînée
         self.engine_particles: List[Particle] = []
-        self.trail: List[Tuple[float,float]] = []
+        self.trail: List[Tuple[float, float]] = []
+
+    def _image_for_angle(self, angle: int) -> pygame.Surface:
+        cached = self._rotated_cache.get(angle)
+        if cached is None:
+            cached = pygame.transform.rotate(self._base_image, angle)
+            self._rotated_cache[angle] = cached
+        return cached
 
     def rotate(self, direction: int):
         """Tourne le vaisseau: direction = +1 pour gauche, -1 pour droite."""
         self.angle = (self.angle + direction * PLAYER_ROT_SPEED) % 360
-        # we rotate the base image and update the current image
-        self.image = pygame.transform.rotate(self._base_image, self.angle)
+        # Image pré-tournée mise en cache, au lieu d'appeler transform.rotate
+        # à chaque frame tant que le joueur tourne.
+        self.image = self._image_for_angle(self.angle)
         self.rect = self.image.get_rect(center=self.rect.center)
 
     def accelerate(self):
         if self.vel.length() < PLAYER_MAX_SPEED:
-            # Calculate vector direction based on current angle
-            rad = -math.radians(self.angle) + math.pi/2
+            rad = -math.radians(self.angle) + math.pi / 2
             direction = pygame.Vector2(math.cos(rad), math.sin(rad))
             self.vel += direction * PLAYER_ACCELERATION
             self._create_engine_particles(direction)
 
     def _create_engine_particles(self, direction: pygame.Vector2):
-        # Génèrates particles behind the ship
+        # Génère des particules derrière le vaisseau
         offset = direction * (-self.radius * 0.8)
         base_pos = self.pos + offset
         for _ in range(ENGINE_PARTICLE_COUNT):
@@ -79,25 +90,24 @@ class Player(pygame.sprite.Sprite):
         wrap_position(self.pos, self.radius)
         self.rect.center = self.pos
 
-        # Shot cooldown
+        # Cooldown de tir
         self.shot_timer = max(0.0, self.shot_timer - dt)
 
-        # Invincibility
+        # Invincibilité
         if self.invulnerable:
             self.invul_timer -= dt
             if self.invul_timer <= 0.0:
                 self.invulnerable = False
 
-        # Update particles
+        # Particules
         self.engine_particles[:] = [p for p in self.engine_particles if p.update(dt)]
 
-        # Update trail
+        # Traînée
         self.trail.append((self.pos.x, self.pos.y))
         if len(self.trail) > 15:
             self.trail.pop(0)
 
     def handle_input(self, keys: pygame.key.ScancodeWrapper, dt: float):
-        from pygame.locals import K_LEFT, K_RIGHT, K_UP, K_SPACE
         # Rotation
         if keys[K_LEFT]:
             self.rotate(+1)
@@ -106,11 +116,10 @@ class Player(pygame.sprite.Sprite):
         # Accélération
         if keys[K_UP]:
             self.accelerate()
-        # shot
+        # Tir
         if keys[K_SPACE] and self.shot_timer <= 0.0:
             self.shot_timer = PLAYER_SHOT_COOLDOWN
-            # Calculate direction based on current angle
-            rad = -math.radians(self.angle) + math.pi/2
+            rad = -math.radians(self.angle) + math.pi / 2
             direction = pygame.Vector2(math.cos(rad), math.sin(rad))
             return Shot(self.pos, direction)
         return None
@@ -127,21 +136,24 @@ class Player(pygame.sprite.Sprite):
         return False
 
     def draw(self, surface: pygame.Surface):
-        # We draw the trail if it has enough points
+        # Traînée
         if len(self.trail) > 1:
-            pygame.draw.lines(surface, (100, 200, 255, 100), False, self.trail, 2)
+            pygame.draw.lines(surface, (100, 200, 255), False, self.trail, 2)
 
-        # we draw the player image at its current position
+        # Vaisseau
         surface.blit(self.image, self.rect.topleft)
 
-        # Draw engine particles
+        # Particules moteur
         for p in self.engine_particles:
             p.draw(surface)
 
-        # Si invincible, draw an overlay
+        # Overlay clignotant si invincible (image mise en cache, alpha seule change)
         if self.invulnerable:
+            if self._invuln_overlay is None:
+                self._invuln_overlay = pygame.Surface(
+                    (self.radius * 2 + 10, self.radius * 2 + 10), pygame.SRCALPHA)
+                pygame.draw.circle(self._invuln_overlay, (255, 255, 255, 255),
+                                   (self.radius + 5, self.radius + 5), self.radius + 5, 3)
             alpha = int(255 * (abs(pygame.time.get_ticks() % 500 - 250) / 250))
-            overlay = pygame.Surface((self.radius*2+10, self.radius*2+10), pygame.SRCALPHA)
-            pygame.draw.circle(overlay, (255, 255, 255, alpha),
-                               (self.radius+5, self.radius+5), self.radius+5, 3)
-            surface.blit(overlay, (self.pos.x - self.radius - 5, self.pos.y - self.radius - 5))
+            self._invuln_overlay.set_alpha(alpha)
+            surface.blit(self._invuln_overlay, (self.pos.x - self.radius - 5, self.pos.y - self.radius - 5))

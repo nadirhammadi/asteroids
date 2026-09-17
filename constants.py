@@ -6,7 +6,7 @@ INVULNERABILITY_DURATION = 2.0
 BORDER_COLOR = (100, 150, 255)
 BORDER_THICKNESS = 4
 
-# Coulors
+# Colors
 PLAYER_COLOR = (0, 200, 255)
 PLAYER_BORDER = (0, 0, 0)
 ASTEROID_COLORS = [(180, 160, 140), (150, 130, 110), (120, 100, 80)]
@@ -32,15 +32,16 @@ SHOT_LIFETIME = 1
 
 # Asteroid parameters
 ASTEROID_BASE_SPEED = 1.5  # scalaire, multiplied by (4 - size)
-ASTEROID_ROT_SPEED_MAX = 1  #  degrés/frame
+ASTEROID_ROT_SPEED_MAX = 1  # degrés/frame
 ASTEROID_POINT_COUNT = 8
+ASTEROID_ROTATION_CACHE_STEP = 5  # degrés: granularité du cache d'images pré-tournées
 
 # Asteroidfield parameters
 ASTEROID_INITIAL_COUNT = 6
 ASTEROID_MAX_ON_SCREEN = 15
 ASTEROID_SPAWN_INTERVAL = 5.0  # secondes
 
-# PParticle parameters
+# Particle parameters
 ENGINE_PARTICLE_COUNT = 2
 ENGINE_PARTICLE_LIFETIME = (0.3, 0.8)  # random lifetime in seconds
 EXPLOSION_PARTICLE_COUNT = 30
